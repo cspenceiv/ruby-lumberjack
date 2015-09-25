@@ -61,8 +61,13 @@ module Lumberjack
       while !closed?
         connection = accept
 
-        Thread.new(connection) do |connection|
-          connection.run(&block)
+        # Some exception may occur in the accept loop
+        # we will try again in the next iteration
+        # unless the server is closing
+        if connection
+          Thread.new(connection) do |connection|
+            connection.run(&block)
+          end
         end
       end
     end # def run
@@ -82,11 +87,9 @@ module Lumberjack
         else
           return Connection.new(socket, self)
         end
-      rescue OpenSSL::SSL::SSLError, IOError, EOFError
-        # close the current socket, make plain text connection stop.
-        # but lets keep listening for new ones.
-        socket.close
-        retry
+      rescue OpenSSL::SSL::SSLError, IOError, EOFError, Errno::EBADF
+        socket.close rescue nil
+        retry unless closed?
       rescue IO::WaitReadable, Errno::EAGAIN # Ressource not ready yet, so lets try again
         begin
           IO.select([@server], nil, nil, SOCKET_TIMEOUT)
@@ -105,7 +108,7 @@ module Lumberjack
         ssl_socket.accept_nonblock
 
         return ssl_socket
-      rescue IO::WaitReadable #handshake
+      rescue IO::WaitReadable # handshake
         IO.select([ssl_socket], nil, nil, SOCKET_TIMEOUT)
         retry unless closed?
       rescue IO::WaitWritable # handshake
