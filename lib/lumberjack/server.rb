@@ -50,7 +50,6 @@ module Lumberjack
       if @options[:ssl]
         # load SSL certificate
         @ssl = OpenSSL::SSL::SSLContext.new
-        @ssl.timeout = SOCKET_TIMEOUT
         @ssl.cert = OpenSSL::X509::Certificate.new(File.read(@options[:ssl_certificate]))
         @ssl.key = OpenSSL::PKey::RSA.new(File.read(@options[:ssl_key]),
           @options[:ssl_key_passphrase])
