@@ -77,7 +77,7 @@ module Lumberjack
 
     def accept(&block)
       begin
-       socket = @server.accept_nonblock
+        socket = @server.accept_nonblock
         # update the socket with a SSL layer
         socket = accept_ssl(socket) if ssl?
 
